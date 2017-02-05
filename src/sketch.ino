@@ -3,18 +3,19 @@
 #define RCK_PIN 11
 #define NUM_LEDS 24
 
-#define BAM_MAX_VALUE 255
+#define BAM_MAX_VALUE 15
 #define WHEEL_MAX_BRIGHTNESS 100
+
+#define BAM_POSITIONS 4
+#define OUT_BYTES 3
 
 /*
    TODO
-   - calculate BAM values on change
    - use timer interrupt
 */
 
 long _lastBrightnessChange;
 byte _brightness[NUM_LEDS];
-byte _offIndex = 0;
 
 void setLed(byte index, byte r, byte g, byte b) {
   int ledPos = index * 3;
@@ -29,22 +30,18 @@ void setup()
   pinMode(SCK_PIN, OUTPUT);
   pinMode(RCK_PIN, OUTPUT);
   digitalWrite(RCK_PIN, LOW);
-
-  for(int i = 0; i < NUM_LEDS; i++) {
-    _brightness[i] = 0;
-  }
 }
 
 void loop()
 {
   long currentMillis = millis();
-  if(currentMillis - _lastBrightnessChange >= 10) {
+  if(currentMillis - _lastBrightnessChange >= 1000) {
     _lastBrightnessChange = currentMillis;
 
-    for(int i = 0; i < NUM_LEDS; i++) {
-      int ledPos = i*3;
-      wheel(&_brightness[ledPos+0], &_brightness[ledPos+1], &_brightness[ledPos+2]);
-    }
+    _brightness[2]++;
+    if(_brightness[2] > BAM_MAX_VALUE) _brightness[2] = 0;
+
+    bamCalc(_brightness, NUM_LEDS);
   }
 
   bam();
@@ -102,11 +99,21 @@ void bam()
   }
 }
 
-void bamWrite(int bitPosition) {
-  byte out;
-  byte outIndex;
-  for(int ledIndex = 0; ledIndex < NUM_LEDS; ledIndex++) {
-    bool isEnabled = bitRead(_brightness[ledIndex], bitPosition);
+byte _bamBytes[BAM_POSITIONS][OUT_BYTES];
+
+void bamCalc(byte leds[], byte ledsSize) {
+  for(int pos = 1; pos <= BAM_POSITIONS; pos++) {
+    bamBytes(pos, leds, ledsSize, _bamBytes[pos-1]);
+  }
+}
+
+void bamBytes(byte pos, byte leds[], byte ledsSize, byte *buffer) {
+  byte out = 0;
+  byte outIndex = 0;
+  byte bufferIndex = 0;
+
+  for(int ledIndex = 0; ledIndex < ledsSize; ledIndex++) {
+    bool isEnabled = bitRead(leds[ledIndex], pos);
     if(isEnabled) {
       byte mask = (1 << (7 - outIndex));
       out = out | mask;
@@ -114,12 +121,19 @@ void bamWrite(int bitPosition) {
 
     outIndex++;
     if(outIndex > 7) {
-      shiftOut(SI_PIN, SCK_PIN, LSBFIRST, out);
       outIndex = 0;
+      buffer[bufferIndex] = out;
+      bufferIndex++;
       out = 0;
     }
   }
+}
 
+void bamWrite(int pos) {
+  for(int i = 0; i < OUT_BYTES; i++) {
+    shiftOut(SI_PIN, SCK_PIN, LSBFIRST, _bamBytes[pos-1][i]);
+  }
   digitalWrite(RCK_PIN, HIGH);
   digitalWrite(RCK_PIN, LOW);
 }
+
