@@ -1,7 +1,6 @@
 /*
    TODO
    - use 8-bit timer
-   - use volatile variables
    - double buffer
 */
 #define SI_PIN 12
@@ -18,26 +17,30 @@
 
 long _lastBrightnessChange;
 byte _brightness[NUM_LEDS];
-
 volatile byte _bamCounter;
 volatile byte _bamBytes[BAM_POSITIONS][OUT_BYTES];
 
 byte _wheelPosition[8];
 
 #define WHEEL_COLORS 8
+
+#define COLOR_MIN  0
+#define COLOR_MID  7
+#define COLOR_MAX 15
+
 byte _colors[][3] = {
-  {255,   0,   0},
-  {255, 127,   0},
-  {255, 255,   0},
-  {127, 255,   0},
-  {  0, 255,   0},
-  {  0, 255, 127},
-  {  0, 255, 255},
-  {  0, 127, 255},
-  {  0,   0, 255},
-  {127,   0, 255},
-  {255,   0, 255},
-  {255,   0, 127}
+  {COLOR_MAX, COLOR_MIN, COLOR_MIN},
+  {COLOR_MAX, COLOR_MID, COLOR_MIN},
+  {COLOR_MAX, COLOR_MAX, COLOR_MIN},
+  {COLOR_MID, COLOR_MAX, COLOR_MIN},
+  {COLOR_MIN, COLOR_MAX, COLOR_MIN},
+  {COLOR_MIN, COLOR_MAX, COLOR_MID},
+  {COLOR_MIN, COLOR_MAX, COLOR_MAX},
+  {COLOR_MIN, COLOR_MID, COLOR_MAX},
+  {COLOR_MIN, COLOR_MIN, COLOR_MAX},
+  {COLOR_MID, COLOR_MIN, COLOR_MAX},
+  {COLOR_MAX, COLOR_MIN, COLOR_MAX},
+  {COLOR_MAX, COLOR_MIN, COLOR_MID}
 };
 
 void setup()
