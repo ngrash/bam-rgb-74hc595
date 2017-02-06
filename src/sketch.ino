@@ -1,7 +1,3 @@
-/*
-   TODO
-   - double buffer
-*/
 #define SI_PIN 12
 #define SCK_PIN 13
 #define RCK_PIN 11
@@ -16,7 +12,10 @@
 long _lastBrightnessChange;
 byte _brightness[NUM_LEDS];
 volatile byte _bamCounter;
-volatile byte _bamBytes[BAM_POSITIONS][OUT_BYTES];
+
+volatile byte _bamBytesRead = 0;
+volatile byte _bamBytesWrite = 1;
+volatile byte _bamBytes[2][BAM_POSITIONS][OUT_BYTES];
 
 byte _wheelPosition[8];
 
@@ -103,8 +102,14 @@ void bam()
 
 void bamCalc(byte leds[], byte ledsSize) {
   for(int pos = 0; pos < BAM_POSITIONS; pos++) {
-    bamBytes(pos, leds, ledsSize, _bamBytes[pos]);
+    bamBytes(pos, leds, ledsSize, _bamBytes[_bamBytesWrite][pos]);
   }
+
+  noInterrupts();
+  byte tmp = _bamBytesWrite;
+  _bamBytesWrite = _bamBytesRead;
+  _bamBytesRead = tmp;
+  interrupts();
 }
 
 void bamBytes(byte pos, byte leds[], byte ledsSize, volatile byte *buffer) {
@@ -131,7 +136,7 @@ void bamBytes(byte pos, byte leds[], byte ledsSize, volatile byte *buffer) {
 
 void bamWrite(int pos) {
   for(int i = 0; i < OUT_BYTES; i++) {
-    shiftOut(SI_PIN, SCK_PIN, LSBFIRST, _bamBytes[pos][i]);
+    shiftOut(SI_PIN, SCK_PIN, LSBFIRST, _bamBytes[_bamBytesRead][pos][i]);
   }
   digitalWrite(RCK_PIN, HIGH);
   digitalWrite(RCK_PIN, LOW);
