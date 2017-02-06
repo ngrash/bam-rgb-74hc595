@@ -18,8 +18,9 @@
 
 long _lastBrightnessChange;
 byte _brightness[NUM_LEDS];
-byte _bamCounter;
-byte _bamBytes[BAM_POSITIONS][OUT_BYTES];
+
+volatile byte _bamCounter;
+volatile byte _bamBytes[BAM_POSITIONS][OUT_BYTES];
 
 byte _wheelPosition[8];
 
@@ -107,7 +108,7 @@ void bamCalc(byte leds[], byte ledsSize) {
   }
 }
 
-void bamBytes(byte pos, byte leds[], byte ledsSize, byte *buffer) {
+void bamBytes(byte pos, byte leds[], byte ledsSize, volatile byte *buffer) {
   byte out = 0;
   byte outIndex = 0;
   byte bufferIndex = 0;
