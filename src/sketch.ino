@@ -1,6 +1,5 @@
 /*
    TODO
-   - use 8-bit timer
    - double buffer
 */
 #define SI_PIN 12
@@ -13,7 +12,6 @@
 
 #define BAM_POSITIONS 4
 #define OUT_BYTES 3
-#define TIMER_COUNT 60000
 
 long _lastBrightnessChange;
 byte _brightness[NUM_LEDS];
@@ -51,11 +49,10 @@ void setup()
   digitalWrite(RCK_PIN, LOW);
 
   noInterrupts();
-  TCCR1A = 0;
-  TCCR1B = 0;
-  TCNT1 = TIMER_COUNT;
-  TCCR1B |= (1 << CS10);
-  TIMSK1 |= (1 << TOIE1);
+  TCCR2A = 0;
+  TCCR2B = 0;
+  TCCR2B |= (1 << CS20);
+  TIMSK2 |= (1 << TOIE2);
   interrupts();
 
   for(int i = 0; i < 8; i++) {
@@ -63,9 +60,8 @@ void setup()
   }
 }
 
-ISR(TIMER1_OVF_vect)
+ISR(TIMER2_OVF_vect)
 {
-  TCNT1 = TIMER_COUNT;
   bam();
 }
 
