@@ -3,21 +3,28 @@
 #define RCK_PIN 11
 #define NUM_LEDS 24
 
-#define BAM_MAX_VALUE 15
-#define WHEEL_MAX_BRIGHTNESS 100
-
 #define BAM_POSITIONS 4
+#define BAM_MAX_VALUE 15
+
 #define OUT_BYTES 3
+
+#define UPDATE_DELAY 250
+
+#define NUM_RGB 8
 
 long _lastBrightnessChange;
 byte _brightness[NUM_LEDS];
 volatile byte _bamCounter;
 
-volatile byte _bamBytesRead = 0;
-volatile byte _bamBytesWrite = 1;
-volatile byte _bamBytes[2][BAM_POSITIONS][OUT_BYTES];
+#define BAM_BUFFER_COUNT 2
+#define BAM_BUFFER_0 0
+#define BAM_BUFFER_1 1
 
-byte _wheelPosition[8];
+volatile byte _bamBytesRead = BAM_BUFFER_0;
+volatile byte _bamBytesWrite = BAM_BUFFER_1;
+volatile byte _bamBytes[BAM_BUFFER_COUNT][BAM_POSITIONS][OUT_BYTES];
+
+byte _wheelPosition[NUM_RGB];
 
 #define WHEEL_COLORS 8
 
@@ -54,8 +61,15 @@ void setup()
   TIMSK2 |= (1 << TOIE2);
   interrupts();
 
-  for(int i = 0; i < 8; i++) {
+  for(int i = 0; i < NUM_LEDS; i++) {
+    _brightness[i] = 0;
+  }
+
+  for(int i = 0; i < NUM_RGB; i++) {
     _wheelPosition[i] = i;
+    while(_wheelPosition[i] > 8) {
+      _wheelPosition[i] -= 8;
+    }
   }
 }
 
@@ -67,10 +81,10 @@ ISR(TIMER2_OVF_vect)
 void loop()
 {
   long currentMillis = millis();
-  if(currentMillis - _lastBrightnessChange >= 50) {
+  if(currentMillis - _lastBrightnessChange >= UPDATE_DELAY) {
     _lastBrightnessChange = currentMillis;
 
-    for(int i = 0; i < 8; i++) {
+    for(int i = 0; i < NUM_RGB; i++) {
       _wheelPosition[i]++;
       if(_wheelPosition[i] > WHEEL_COLORS) _wheelPosition[i] = 0;
 
